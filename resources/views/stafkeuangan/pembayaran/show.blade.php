@@ -95,10 +95,13 @@
         </div>
     </div>
 
-    <div class="mt-3">
+    <div class="mt-4 d-flex justify-content-start">
         <a href="{{ route('stafkeuangan.pembayaran.index') }}"
-           class="btn btn-secondary">
-            ← Kembali
+            class="btn btn-back-pro d-inline-flex align-items-center justify-content-center gap-2">
+                <span class="icon-wrap">
+                    <i class="bi bi-arrow-left"></i>
+                </span>
+                <span>Kembali</span>
         </a>
     </div>
 </div>

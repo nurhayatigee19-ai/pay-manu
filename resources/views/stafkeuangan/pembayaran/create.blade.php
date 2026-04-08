@@ -95,17 +95,52 @@ use Illuminate\Support\Str;
                 @enderror
             </div>
 
-            <button
-                type="submit"
-                class="btn btn-success"
-                id="btn-submit"
-                onclick="this.disabled=true; this.form.submit();"
-            >
-                Simpan Pembayaran
-            </button>
+            <div class="mt-4 d-flex gap-3">
 
-            <a href="{{ route('stafkeuangan.pembayaran.index') }}" class="btn btn-secondary ms-2">Batal</a>
+                {{-- SIMPAN --}}
+                <button type="submit"
+                    class="btn btn-back-pro d-inline-flex align-items-center justify-content-center gap-2"
+                    onclick="this.disabled=true; this.form.submit();">
+
+                    <span class="icon-wrap">
+                        <i class="bi bi-check-circle"></i>
+                    </span>
+
+                    <span>Simpan</span>
+                </button>
+
+                {{-- KEMBALI --}}
+                <a href="{{ route('stafkeuangan.pembayaran.index') }}"
+                    class="btn btn-back-pro d-inline-flex align-items-center justify-content-center gap-2">
+
+                    <span class="icon-wrap">
+                        <i class="bi bi-arrow-left"></i>
+                    </span>
+
+                    <span>Kembali</span>
+                </a>
+
+            </div>
         </form>
     </div>
 </div>
+
+@push('styles')
+<style>
+.btn-back-pro {
+    background-color: #198754;
+    color: #fff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-back-pro:hover {
+    background-color: #157347;
+    color: #fff;
+    transform: translateX(-3px);
+}
+</style>
+@endpush
 @endsection

@@ -15,31 +15,65 @@ class PembayaranController extends Controller
     // ===============================
     // LIST SEMUA PEMBAYARAN
     // ===============================
-public function index()
-{
-    $pembayaran = Pembayaran::with([
-        'tagihanSiswa.siswa.kelas',
-        'tagihanSiswa.tahunAjar'
-    ])->latest()->get();
+    public function index(Request $request)
+    {
+        $query = Pembayaran::with([
+            'tagihanSiswa.siswa.kelas',
+            'tagihanSiswa.tahunAjar'
+        ]);
 
-    $kelas = null;
-    $tahunAjaran = null;
-
-    if ($pembayaran->isNotEmpty()) {
-        $tagihan = $pembayaran->first()->tagihanSiswa;
-
-        if ($tagihan) {
-            $kelas = $tagihan->siswa->kelas ?? null;
-            $tahunAjaran = $tagihan->tahunAjar->tahun ?? null;
+        // 🔍 SEARCH (nama / NIS)
+        if ($request->search) {
+            $query->whereHas('tagihanSiswa.siswa', function ($q) use ($request) {
+                $q->where('nama', 'like', '%' . $request->search . '%')
+                ->orWhere('nis', 'like', '%' . $request->search . '%');
+            });
         }
-    }
 
-    return view('stafkeuangan.pembayaran.index', compact(
-        'pembayaran',
-        'kelas',
-        'tahunAjaran'
-    ));
-}
+        // 📅 FILTER TANGGAL
+        if ($request->tanggal) {
+            $query->whereDate('tanggal_bayar', $request->tanggal);
+        }
+
+        // ✅ PAGINATION (WAJIB)
+        $pembayaran = $query
+            ->where('status', 'valid') // ✅ FILTER UTAMA
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        // 🔥 TRANSFORM (BIAR BISA PAKAI DI BLADE)
+        $pembayaran->getCollection()->transform(function ($p) {
+
+            $siswa = $p->tagihanSiswa->siswa ?? null;
+            $kelas = $siswa->kelas ?? null;
+
+            $p->nis = $siswa->nis ?? '-';
+            $p->nama_siswa = $siswa->nama ?? '-';
+            $p->nama_kelas = $kelas->nama_kelas ?? '-';
+
+            return $p;
+        });
+
+        // ambil info header
+        $kelas = null;
+        $tahunAjaran = null;
+
+        if ($pembayaran->isNotEmpty()) {
+            $tagihan = $pembayaran->first()->tagihanSiswa;
+
+            if ($tagihan) {
+                $kelas = $tagihan->siswa->kelas ?? null;
+                $tahunAjaran = $tagihan->tahunAjar->tahun ?? null;
+            }
+        }
+
+        return view('stafkeuangan.pembayaran.index', compact(
+            'pembayaran',
+            'kelas',
+            'tahunAjaran'
+        ));
+    }
 
     // ===============================
     // FORM INPUT PEMBAYARAN
@@ -208,6 +242,12 @@ public function index()
         $siswa = $tagihan->siswa;
         $kelas = $siswa->kelas;
 
+        // ----------- FIX DISINI -------------
+        $semester   = ucfirst($tagihan->semester); // Ganjil / Genap
+        $tahunAjar  = $tagihan->tahunAjar->tahun ?? '-';
+        $periode    = "$semester $tahunAjar";      // contoh: Ganjil 2025/2026
+        // -------------------------------------
+
         $totalTagihan = $tagihan->nominal_tagihan;
         $totalDibayar = $tagihan->total_dibayar;
         $sisaTagihan  = $tagihan->sisa_tagihan;
@@ -219,6 +259,9 @@ public function index()
             'totalTagihan' => $totalTagihan,
             'totalDibayar' => $totalDibayar,
             'sisaTagihan'  => $sisaTagihan,
+
+            // kirim variabel periode
+            'periode'      => $periode
         ]);
 
         return $pdf->stream('Bukti_Pembayaran_'.$siswa->nis.'_'.$pembayaran->id.'.pdf');
