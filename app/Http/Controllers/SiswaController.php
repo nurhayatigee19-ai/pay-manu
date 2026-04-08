@@ -11,62 +11,115 @@ use Illuminate\Http\Request;
 class SiswaController extends Controller
 {
     /**
-     * ===============================
-     * HALAMAN SISWA GLOBAL (READ ONLY)
-     * route: stafkeuangan.siswa.index
-     * ===============================
+     * =======================
+     * GLOBAL LIST SISWA
+     * =======================
      */
-    public function index()
+    public function index(Request $request)
     {
         $tahunAjar = TahunAjar::where('aktif', 1)->first();
 
-        $siswa = Siswa::with('kelas')
-            ->get()
-            ->map(function ($s) use ($tahunAjar) {
+        $listKelas = Kelas::orderBy('nama_kelas')->get();
 
-                $tagihan = null;
+        $query = Siswa::with(['kelas', 'tagihanSiswa']);
 
-                if ($tahunAjar) {
-                    $tagihan = $s->tagihanSiswa()
-                        ->where('tahun_ajar_id', $tahunAjar->id)
-                        ->get();
+        // =============================
+        // 🔍 FILTER NAMA / NIS (FIX)
+        // =============================
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nama', 'like', "%{$request->search}%")
+                ->orWhere('nis', 'like', "%{$request->search}%");
+            });
+        }
+
+        // =============================
+        // 📚 FILTER KELAS (FIX)
+        // =============================
+        if ($request->kelas) {
+            $query->where('kelas_id', $request->kelas);
+        }
+
+        // =============================
+        // PAGINATE DULU
+        // =============================
+        $siswa = $query->paginate(10)->withQueryString();
+
+        // =============================
+        // HITUNG TAGIHAN
+        // =============================
+        $siswa->getCollection()->transform(function ($s) use ($tahunAjar) {
+
+            $tagihan = collect();
+
+            if ($tahunAjar) {
+                $tagihan = $s->tagihanSiswa
+                    ->where('tahun_ajar_id', $tahunAjar->id);
+            }
+
+            $s->tagihan = $tagihan->first();
+
+            $totalTagihan = $tagihan->sum('nominal_tagihan');
+            $totalBayar   = $tagihan->sum('total_dibayar');
+
+            $s->total_tagihan = $totalTagihan;
+            $s->total_bayar   = $totalBayar;
+            $s->sisa_tagihan  = max($totalTagihan - $totalBayar, 0);
+            $s->status        = $s->sisa_tagihan == 0 ? 'Lunas' : 'Belum Lunas';
+
+            return $s;
+        });
+
+        // =============================
+        // ❗ FILTER STATUS (VERSI BENAR)
+        // =============================
+        if ($request->status) {
+
+            $filtered = $siswa->getCollection()->filter(function ($s) use ($request) {
+
+                if ($request->status == 'lunas') {
+                    return $s->status == 'Lunas';
                 }
 
-                $totalTagihan = $tagihan->sum('nominal_tagihan');
-                $totalBayar = $tagihan->sum(function ($t) {
-                    return $t->total_dibayar;
-                });
+                if ($request->status == 'belum') {
+                    return $s->status == 'Belum Lunas';
+                }
 
-                // ATTRIBUTE VIRTUAL (TIDAK DISIMPAN DI DB)
-                $s->total_tagihan = $totalTagihan;
-                $s->total_bayar   = $totalBayar;
-                $s->sisa_tagihan  = max($totalTagihan - $totalBayar, 0);
-                $s->status        = $s->sisa_tagihan == 0 ? 'Lunas' : 'Belum Lunas';
-
-                return $s;
+                return true;
             });
 
-        return view('stafkeuangan.siswa.index', compact('siswa'));
+            $siswa->setCollection($filtered->values());
+        }
+
+        // =============================
+        // DETAIL KELAS
+        // =============================
+        $kelasDetail = $request->kelas 
+            ? Kelas::find($request->kelas)
+            : null;
+
+        return view('stafkeuangan.siswa.index', [
+            'siswa'       => $siswa,
+            'listKelas'   => $listKelas,
+            'kelasDetail' => $kelasDetail,
+        ]);
     }
 
     /**
-     * ===============================
-     * FORM TAMBAH SISWA
-     * route: stafkeuangan.siswa.create
-     * ===============================
+     * =======================
+     * CREATE SISWA
+     * =======================
      */
     public function create()
     {
-        $kelas = Kelas::orderBy('nama_kelas')->get();
-
-        return view('stafkeuangan.siswa.create', compact('kelas'));
+        $listKelas = Kelas::orderBy('nama_kelas')->get();
+        return view('stafkeuangan.siswa.create', compact('listKelas'));
     }
 
     /**
-     * ===============================
-     * SIMPAN SISWA BARU
-     * route: stafkeuangan.siswa.store
-     * ===============================
+     * =======================
+     * STORE SISWA + TAGIHAN
+     * =======================
      */
     public function store(Request $request)
     {
@@ -76,19 +129,15 @@ class SiswaController extends Controller
             'kelas_id' => 'required|exists:kelas,id',
         ]);
 
-        // simpan siswa
         $siswa = Siswa::create([
             'nis'      => $request->nis,
             'nama'     => $request->nama,
             'kelas_id' => $request->kelas_id,
         ]);
 
-        // ambil tahun ajar aktif
         $tahunAjar = TahunAjar::where('aktif', 1)->first();
 
         if ($tahunAjar) {
-
-            // semester ganjil
             TagihanSiswa::create([
                 'siswa_id'       => $siswa->id,
                 'tahun_ajar_id'  => $tahunAjar->id,
@@ -97,7 +146,6 @@ class SiswaController extends Controller
                 'total_tagihan'  => 600000,
             ]);
 
-            // semester genap
             TagihanSiswa::create([
                 'siswa_id'       => $siswa->id,
                 'tahun_ajar_id'  => $tahunAjar->id,
@@ -113,10 +161,9 @@ class SiswaController extends Controller
     }
 
     /**
-     * ===============================
-     * SISWA PER KELAS (INTI SISTEM)
-     * route: stafkeuangan.kelas.siswa
-     * ===============================
+     * =======================
+     * LIST SISWA PER KELAS
+     * =======================
      */
     public function byKelas(Kelas $kelas)
     {
@@ -124,27 +171,72 @@ class SiswaController extends Controller
 
         $siswa = Siswa::with('kelas')
             ->where('kelas_id', $kelas->id)
-            ->get()
-            ->map(function ($s) use ($tahunAjar) {
+            ->paginate(10)
+            ->withQueryString();
 
-                $tagihan = $s->tagihanSiswa()
-                    ->where('tahun_ajar_id', $tahunAjar->id)
-                    ->get();
+        $siswa->getCollection()->transform(function ($s) use ($tahunAjar) {
 
-                $totalTagihan = $tagihan->sum('nominal_tagihan');
-                $totalBayar   = $tagihan->sum('total_dibayar');
+            $tagihan = $s->tagihanSiswa()
+                ->where('tahun_ajar_id', $tahunAjar->id)
+                ->get();
 
-                // simpan tagihan ke objek siswa (penting untuk blade)
-                $s->tagihan = $tagihan->first();
+            $totalTagihan = $tagihan->sum('nominal_tagihan');
+            $totalBayar   = $tagihan->sum('total_dibayar');
 
-                $s->total_tagihan = $totalTagihan;
-                $s->total_bayar   = $totalBayar;
-                $s->sisa_tagihan  = max($totalTagihan - $totalBayar, 0);
-                $s->status        = $s->sisa_tagihan == 0 ? 'Lunas' : 'Belum Lunas';
+            $s->total_tagihan = $totalTagihan;
+            $s->total_bayar   = $totalBayar;
+            $s->sisa_tagihan  = max($totalTagihan - $totalBayar, 0);
+            $s->status        = $s->sisa_tagihan == 0 ? 'Lunas' : 'Belum Lunas';
 
-                return $s;
-            });
+            return $s;
+        });
 
-        return view('stafkeuangan.siswa.index', compact('kelas', 'siswa'));
+        return view('stafkeuangan.siswa.index', [
+            'kelasDetail' => $kelas,  // <- kini konsisten
+            'siswa'       => $siswa,
+            'listKelas'   => Kelas::all(),
+        ]);
+    }
+
+    /**
+     * =======================
+     * DETAIL SISWA
+     * =======================
+     */
+    public function show($id)
+    {
+        $siswa = \App\Models\Siswa::with([
+            'kelas',
+            'tagihanSiswa.tahunAjar',
+            'tagihanSiswa.pembayaran'
+        ])->findOrFail($id);
+
+        $totalTagihan = $siswa->tagihanSiswa->sum('total_tagihan');
+
+        $totalBayar = $siswa->tagihanSiswa->sum(function ($t) {
+            return $t->pembayaran
+                ->where('status', \App\Domain\Pembayaran\PembayaranStatus::VALID)
+                ->sum('jumlah');
+        });
+
+        $sisaTagihan = $totalTagihan - $totalBayar;
+
+        $status = $sisaTagihan <= 0 ? 'Lunas' : 'Belum Lunas';
+
+        $riwayat = $siswa->tagihanSiswa
+            ->flatMap(function ($t) {
+                return $t->pembayaran;
+            })
+            ->where('status', \App\Domain\Pembayaran\PembayaranStatus::VALID)
+            ->sortByDesc('tanggal_bayar');
+
+        return view('stafkeuangan.siswa.show', compact(
+            'siswa',
+            'totalTagihan',
+            'totalBayar',
+            'sisaTagihan',
+            'status',
+            'riwayat'
+        ));
     }
 }
