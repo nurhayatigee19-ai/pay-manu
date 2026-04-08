@@ -31,15 +31,15 @@ Route::get('/', function () {
         : view('landing');
 });
 
+
 /*
 |--------------------------------------------------------------------------
-| Auth
+| Auth (Register dimatikan)
 |--------------------------------------------------------------------------
 */
 
-Auth::routes([
-    'register' => false
-]);
+Auth::routes(['register' => false]);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +53,7 @@ Route::get('/register-staf', [RegisterController::class, 'showRegistrationForm']
 Route::post('/register-staf', [RegisterController::class, 'register'])
     ->name('register.staf.store');
 
+
 /*
 |--------------------------------------------------------------------------
 | Setelah Login
@@ -61,24 +62,11 @@ Route::post('/register-staf', [RegisterController::class, 'register'])
 
 Route::middleware('auth')->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | HOME
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/home', [HomeController::class, 'index'])->name('home');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Redirect laporan berdasarkan role
-    |--------------------------------------------------------------------------
-    */
 
     Route::get('/laporan', function () {
 
-        switch(auth()->user()->role) {
-
+        switch (auth()->user()->role) {
             case 'stafkeuangan':
                 return redirect()->route('stafkeuangan.laporan.index');
 
@@ -87,7 +75,6 @@ Route::middleware('auth')->group(function () {
 
             default:
                 abort(403);
-
         }
 
     })->name('laporan.index');
@@ -106,55 +93,39 @@ Route::prefix('stafkeuangan')
     ->name('stafkeuangan.')
     ->group(function () {
 
-        /*
-        | Dashboard
-        */
-
+        // Dashboard
         Route::get('/dashboard', [StafDashboard::class, 'index'])
             ->name('dashboard');
 
 
         /*
+        |--------------------------------------------------------------------------
         | KELAS
+        |--------------------------------------------------------------------------
         */
 
-        Route::get('/kelas', [KelasController::class, 'index'])
-            ->name('kelas.index');
+        Route::resource('kelas', KelasController::class)
+            ->only(['index', 'create', 'store', 'destroy']);
 
-        Route::get('/kelas/create', [KelasController::class, 'create'])
-            ->name('kelas.create');
-
-        Route::post('/kelas', [KelasController::class, 'store'])
-            ->name('kelas.store');
-
-        Route::delete('/kelas/{kelas}', [KelasController::class, 'destroy'])
-            ->name('kelas.destroy');
-
-
-        /*
-        | SISWA PER KELAS
-        */
-
+        // Siswa per kelas
         Route::get('/kelas/{kelas}/siswa', [SiswaController::class, 'byKelas'])
             ->name('kelas.siswa.index');
 
 
         /*
-        | SISWA
+        |--------------------------------------------------------------------------
+        | SISWA (FULL RESOURCE ROUTE)
+        |--------------------------------------------------------------------------
         */
 
-        Route::get('/siswa', [SiswaController::class, 'index'])
-            ->name('siswa.index');
+        Route::resource('siswa', SiswaController::class);
 
-        Route::get('/siswa/create', [SiswaController::class, 'create'])
-            ->name('siswa.create');
-
-        Route::post('/siswa', [SiswaController::class, 'store'])
-            ->name('siswa.store');
 
 
         /*
+        |--------------------------------------------------------------------------
         | TAGIHAN
+        |--------------------------------------------------------------------------
         */
 
         Route::get('/tagihan', [TagihanController::class, 'index'])
@@ -162,27 +133,22 @@ Route::prefix('stafkeuangan')
 
 
         /*
+        |--------------------------------------------------------------------------
         | TAHUN AJAR
+        |--------------------------------------------------------------------------
         */
 
-        Route::get('/tahun_ajar', [TahunAjarController::class, 'index'])
-            ->name('tahunajar.index');
-
-        Route::get('/tahun_ajar/create', [TahunAjarController::class, 'create'])
-            ->name('tahunajar.create');
-
-        Route::post('/tahun_ajar', [TahunAjarController::class, 'store'])
-            ->name('tahunajar.store');
+        Route::resource('tahun_ajar', TahunAjarController::class)
+            ->only(['index','create','store','destroy']);
 
         Route::post('/tahun_ajar/{id}/aktifkan', [TahunAjarController::class, 'aktifkan'])
-            ->name('tahunajar.aktifkan');
-
-        Route::delete('/tahun_ajar/{id}', [TahunAjarController::class, 'destroy'])
-            ->name('tahunajar.destroy');
+            ->name('tahun_ajar.aktifkan');
 
 
         /*
+        |--------------------------------------------------------------------------
         | PEMBAYARAN
+        |--------------------------------------------------------------------------
         */
 
         Route::get('/pembayaran', [StafPembayaran::class, 'index'])
@@ -197,7 +163,6 @@ Route::prefix('stafkeuangan')
         Route::get('/pembayaran/{pembayaran}', [StafPembayaran::class, 'show'])
             ->name('pembayaran.show');
 
-        // RESTFUL: ubah POST menjadi PATCH
         Route::patch('/pembayaran/{pembayaran}/batalkan', [StafPembayaran::class, 'batalkan'])
             ->name('pembayaran.batalkan');
 
@@ -210,7 +175,9 @@ Route::prefix('stafkeuangan')
 
 
         /*
+        |--------------------------------------------------------------------------
         | LAPORAN
+        |--------------------------------------------------------------------------
         */
 
         Route::get('/laporan', [LaporanController::class, 'index'])
@@ -228,15 +195,21 @@ Route::prefix('stafkeuangan')
         Route::get('/laporan/tunggakan/cetak', [LaporanController::class, 'cetakTunggakan'])
             ->name('laporan.cetakTunggakan');
 
+
         /*
+        |--------------------------------------------------------------------------
         | USER MANAGEMENT
+        |--------------------------------------------------------------------------
         */
+
         Route::resource('user', UserController::class);
 
         Route::put('user/{user}/reset-password', [UserController::class,'resetPassword'])
             ->name('user.reset');
 
-});
+    });
+
+
 
 
 /*
@@ -280,4 +253,4 @@ Route::prefix('kepsek')
         Route::get('/laporan/tunggakan/cetak', [LaporanController::class, 'cetakTunggakan'])
             ->name('laporan.cetakTunggakan');
 
-});
+    });
