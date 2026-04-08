@@ -17,9 +17,85 @@
     <!-- CSS bawaan template -->
     @include('includes.style')
 
-    <!-- ⬇️⬇️ INI YANG SEBELUMNYA KURANG ⬇️⬇️ -->
+    {{-- ===============================
+        🔥 GLOBAL DESIGN SYSTEM
+    =============================== --}}
+    <style>
+    /* ===============================
+       BUTTON TAMBAH (GLOBAL)
+    =============================== */
+    .btn-add {
+        background: #198754;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add:hover {
+        background: #157347;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    /* ===============================
+       BUTTON ICON (AKSI)
+    =============================== */
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+    }
+
+    .btn-edit { background: #0d6efd; color: #fff; }
+    .btn-delete { background: #dc3545; color: #fff; }
+    .btn-reset { background: #ffc107; color: #000; }
+
+    .btn-icon:hover {
+        opacity: 0.9;
+    }
+
+    /* ===============================
+       TABLE
+    =============================== */
+    .table-theme thead th {
+        background-color: #198754 !important;
+        color: #ffffff !important;
+        text-align: center;
+    }
+
+    /* ===============================
+       CARD
+    =============================== */
+    .card {
+        border-radius: 12px;
+    }
+
+    /* ===============================
+       HEADER FLEX (JUDUL + TOMBOL)
+    =============================== */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    </style>
+
+    {{-- STYLE TAMBAHAN PER HALAMAN --}}
     @stack('styles')
 </head>
+
 <body>
     <script src="assets/static/js/initTheme.js"></script>
 
@@ -28,6 +104,7 @@
             <div class="sidebar-wrapper active">
                 <div class="sidebar-header position-relative">
                     <div class="d-flex justify-content-between align-items-center">
+
                         <div class="logo">
                             <a href="{{ url('/') }}">
                                 <img src="{{ asset('Template/assets/compiled/svg/logo.svg') }}" alt="Logo">
@@ -46,6 +123,7 @@
                                 <i class="bi bi-x bi-middle"></i>
                             </a>
                         </div>
+
                     </div>
                 </div>
 
@@ -68,6 +146,11 @@
         </div>
     </div>
 
+    <!-- JS -->
     @include('includes.script')
+
+    {{-- SCRIPT TAMBAHAN PER HALAMAN --}}
+    @stack('scripts')
+
 </body>
 </html>

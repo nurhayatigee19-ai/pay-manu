@@ -48,8 +48,8 @@
                 {{-- ========================= --}}
                 @auth
                     @if(auth()->user()->role === 'stafkeuangan')
-                        <li class="sidebar-item {{ request()->routeIs('stafkeuangan.tahunajar.*') ? 'active' : '' }}">
-                            <a href="{{ route('stafkeuangan.tahunajar.index') }}" class="sidebar-link">
+                        <li class="sidebar-item {{ request()->routeIs('stafkeuangan.tahun_ajar.*') ? 'active' : '' }}">
+                            <a href="{{ route('stafkeuangan.tahun_ajar.index') }}" class="sidebar-link">
                                 <i class="fa-solid fa-calendar"></i>
                                 <span>Tahun Ajar</span>
                             </a>
