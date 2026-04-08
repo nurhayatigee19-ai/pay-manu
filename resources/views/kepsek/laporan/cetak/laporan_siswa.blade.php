@@ -20,14 +20,11 @@
             border-collapse: collapse;
         }
 
-        table,
-        th,
-        td {
+        table, th, td {
             border: 1px solid #000;
         }
 
-        th,
-        td {
+        th, td {
             padding: 6px;
         }
 
@@ -50,7 +47,6 @@
     <h2>Laporan Pembayaran Siswa</h2>
 
     <table>
-
         <thead>
             <tr>
                 <th>No</th>
@@ -64,10 +60,8 @@
         </thead>
 
         <tbody>
-
             @forelse ($siswa as $s)
                 <tr>
-
                     <td class="text-center">
                         {{ $loop->iteration }}
                     </td>
@@ -81,7 +75,7 @@
                     </td>
 
                     <td class="text-center">
-                        {{ $s->kelas->nama_kelas ?? '-' }}
+                        {{ $s->kelas ?? '-' }}
                     </td>
 
                     <td class="text-right">
@@ -95,7 +89,6 @@
                     <td class="text-right">
                         Rp {{ number_format($s->sisa ?? 0, 0, ',', '.') }}
                     </td>
-
                 </tr>
             @empty
                 <tr>
@@ -104,9 +97,7 @@
                     </td>
                 </tr>
             @endforelse
-
         </tbody>
-
     </table>
 
 </body>
