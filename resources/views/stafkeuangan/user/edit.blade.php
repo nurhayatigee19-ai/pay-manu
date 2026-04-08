@@ -83,24 +83,54 @@
                 </div>
 
                 {{-- Button --}}
-                <div class="mt-4">
+                <div class="mt-4 d-flex gap-3">
 
+                    {{-- UPDATE --}}
                     <button type="submit"
-                            class="btn btn-primary">
-                        Update
+                        class="btn btn-back-pro d-inline-flex align-items-center justify-content-center gap-2">
+
+                        <span class="icon-wrap">
+                            <i class="bi bi-check-circle"></i>
+                        </span>
+
+                        <span>Update</span>
                     </button>
 
+                    {{-- KEMBALI --}}
                     <a href="{{ route('stafkeuangan.user.index') }}"
-                       class="btn btn-secondary">
-                        Kembali
+                        class="btn btn-back-pro d-inline-flex align-items-center justify-content-center gap-2">
+
+                        <span class="icon-wrap">
+                            <i class="bi bi-arrow-left"></i>
+                        </span>
+
+                        <span>Kembali</span>
                     </a>
 
                 </div>
-
             </form>
 
         </div>
     </div>
 
 </div>
+
+@push('styles')
+<style>
+.btn-back-pro {
+    background-color: #198754;
+    color: #fff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-back-pro:hover {
+    background-color: #157347;
+    color: #fff;
+    transform: translateX(-3px);
+}
+</style>
+@endpush
 @endsection

@@ -18,16 +18,13 @@
 
                         {{-- Nama --}}
                         <div class="mb-3">
-                            <label for="name" class="form-label">Nama</label>
+                            <label class="form-label">Nama</label>
 
-                            <input
-                                type="text"
-                                name="name"
-                                id="name"
-                                class="form-control @error('name') is-invalid @enderror"
-                                value="{{ old('name') }}"
-                                required
-                            >
+                            <input type="text"
+                                   name="name"
+                                   class="form-control @error('name') is-invalid @enderror"
+                                   value="{{ old('name') }}"
+                                   required>
 
                             @error('name')
                                 <div class="invalid-feedback">
@@ -38,16 +35,13 @@
 
                         {{-- Email --}}
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
+                            <label class="form-label">Email</label>
 
-                            <input
-                                type="email"
-                                name="email"
-                                id="email"
-                                class="form-control @error('email') is-invalid @enderror"
-                                value="{{ old('email') }}"
-                                required
-                            >
+                            <input type="email"
+                                   name="email"
+                                   class="form-control @error('email') is-invalid @enderror"
+                                   value="{{ old('email') }}"
+                                   required>
 
                             @error('email')
                                 <div class="invalid-feedback">
@@ -58,15 +52,12 @@
 
                         {{-- Password --}}
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
+                            <label class="form-label">Password</label>
 
-                            <input
-                                type="password"
-                                name="password"
-                                id="password"
-                                class="form-control @error('password') is-invalid @enderror"
-                                required
-                            >
+                            <input type="password"
+                                   name="password"
+                                   class="form-control @error('password') is-invalid @enderror"
+                                   required>
 
                             @error('password')
                                 <div class="invalid-feedback">
@@ -77,14 +68,11 @@
 
                         {{-- Role --}}
                         <div class="mb-3">
-                            <label for="role" class="form-label">Role</label>
+                            <label class="form-label">Role</label>
 
-                            <select
-                                name="role"
-                                id="role"
-                                class="form-select @error('role') is-invalid @enderror"
-                                required
-                            >
+                            <select name="role"
+                                    class="form-select @error('role') is-invalid @enderror"
+                                    required>
                                 <option value="">-- Pilih Role --</option>
                                 <option value="stafkeuangan">Staf Keuangan</option>
                                 <option value="kepsek">Kepala Sekolah</option>
@@ -97,15 +85,31 @@
                             @enderror
                         </div>
 
-                        {{-- Tombol --}}
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                Simpan
+                        {{-- BUTTON (FIX KONSISTEN) --}}
+                        <div class="mt-4 d-flex gap-3">
+
+                            {{-- SIMPAN --}}
+                            <button type="submit"
+                                class="btn btn-back-pro d-inline-flex align-items-center justify-content-center gap-2">
+
+                                <span class="icon-wrap">
+                                    <i class="bi bi-check-circle"></i>
+                                </span>
+
+                                <span>Simpan</span>
                             </button>
 
-                            <a href="{{ route('stafkeuangan.user.index') }}" class="btn btn-secondary">
-                                Kembali
+                            {{-- KEMBALI --}}
+                            <a href="{{ route('stafkeuangan.user.index') }}"
+                                class="btn btn-back-pro d-inline-flex align-items-center justify-content-center gap-2">
+
+                                <span class="icon-wrap">
+                                    <i class="bi bi-arrow-left"></i>
+                                </span>
+
+                                <span>Kembali</span>
                             </a>
+
                         </div>
 
                     </form>
@@ -117,4 +121,25 @@
     </div>
 
 </div>
+
+@push('styles')
+<style>
+.btn-back-pro {
+    background-color: #198754;
+    color: #fff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-back-pro:hover {
+    background-color: #157347;
+    color: #fff;
+    transform: translateX(-3px);
+}
+
+</style>
+@endpush
+
 @endsection
