@@ -17,8 +17,8 @@ class DashboardController extends Controller
         // total pembayaran bulan ini
         $pembayaranBulanIni = Pembayaran::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
+            ->where('status', 'valid')
             ->sum('jumlah');
-
 
         // total tunggakan
         $totalTunggakan = TagihanSiswa::selectRaw('SUM(total_tagihan - total_dibayar) as tunggakan')

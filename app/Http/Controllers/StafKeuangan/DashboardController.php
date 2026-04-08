@@ -17,12 +17,15 @@ class DashboardController extends Controller
 
         $pembayaranBulanIni = Pembayaran::whereMonth('tanggal_bayar', now()->month)
             ->whereYear('tanggal_bayar', now()->year)
+            ->where('status', 'valid')
             ->sum('jumlah');
 
         $pembayaranTahunIni = Pembayaran::whereYear('tanggal_bayar', now()->year)
+            ->where('status', 'valid')
             ->sum('jumlah');
 
-        $riwayatPembayaran = Pembayaran::latest()
+        $riwayatPembayaran = Pembayaran::where('status', 'valid')
+            ->latest()
             ->take(5)
             ->get();
 
