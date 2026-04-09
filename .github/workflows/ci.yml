@@ -9,14 +9,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Ambil kode
       - name: Checkout kode
         uses: actions/checkout@v3
 
+      # 2. Setup PHP
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
 
+      # 3. Setup folder Laravel (WAJIB sebelum composer)
       - name: Setup Laravel directories
         run: |
           mkdir -p storage/framework/cache
@@ -26,25 +29,32 @@ jobs:
           mkdir -p bootstrap/cache
           chmod -R 777 storage bootstrap/cache
 
+      # 4. Install dependency
       - name: Install dependency
         run: composer install
 
-      - name: Setup env
-        run: |
-          cp .env.example .env
-          php artisan key:generate
+      # 5. Copy env
+      - name: Copy .env
+        run: cp .env.example .env
 
-      - name: Setup database
-        run: |
-          touch database/database.sqlite
+      # 6. Setup database file
+      - name: Setup SQLite
+        run: touch database/database.sqlite
 
+      # 7. Configure database
       - name: Configure database
         run: |
           sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=database\/database.sqlite/' .env
+          sed -i 's|DB_DATABASE=.*|DB_DATABASE=database/database.sqlite|' .env
 
+      # 8. Generate key
+      - name: Generate key
+        run: php artisan key:generate
+
+      # 9. Run migration
       - name: Run migration
         run: php artisan migrate --force
 
+      # 10. Run test
       - name: Run test
         run: php artisan test
