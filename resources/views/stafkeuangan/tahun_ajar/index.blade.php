@@ -8,8 +8,8 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="mb-0">Daftar Tahun Ajar</h4>
 
-        <a href="{{ route('stafkeuangan.tahunajar.create') }}" class="btn btn-primary">
-            <i class="fa fa-plus"></i> Tambah Tahun Ajar
+        <a href="{{ route('stafkeuangan.tahun_ajar.create') }}" class="btn-add-icon">
+            <i class="bi bi-plus-circle"></i> Tambah Tahun Ajar
         </a>
     </div>
 
@@ -25,11 +25,11 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle table-theme">
                     <thead class="table-light text-center">
-                        <tr class="text-center">
+                        <tr>
                             <th width="80">ID</th>
                             <th>Tahun Ajar</th>
                             <th width="150">Status</th>
-                            <th width="200">Aksi</th>
+                            <th width="150">Aksi</th>
                         </tr>
                     </thead>
 
@@ -52,33 +52,29 @@
                             </td>
 
                             <td class="text-center">
+                                <div class="action-group">
 
-                                {{-- tombol aktifkan --}}
-                                @if(!$t->aktif)
-                                <form action="{{ route('stafkeuangan.tahunajar.aktifkan', $t->id) }}"
-                                      method="POST"
-                                      class="d-inline">
-                                    @csrf
+                                    {{-- AKTIFKAN --}}
+                                    @if(!$t->aktif)
+                                    <form action="{{ route('stafkeuangan.tahun_ajar.aktifkan', $t->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm btn-action"
+                                                title="Aktifkan">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    </form>
+                                    @endif
 
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        Aktifkan
+                                    {{-- HAPUS (PAKAI MODAL) --}}
+                                    <button type="button"
+                                            class="btn btn-danger btn-sm btn-action"
+                                            title="Hapus"
+                                            onclick="setHapus('{{ route('stafkeuangan.tahun_ajar.destroy', $t->id) }}')">
+                                        <i class="bi bi-trash"></i>
                                     </button>
-                                </form>
-                                @endif
 
-                                {{-- tombol hapus --}}
-                                <form action="{{ route('stafkeuangan.tahunajar.destroy', $t->id) }}"
-                                      method="POST"
-                                      class="d-inline"
-                                      onsubmit="return confirm('Yakin ingin menghapus tahun ajar ini?')">
-                                    @csrf
-                                    @method('DELETE')
-
-                                    <button type="submit" class="btn btn-danger btn-sm">
-                                        Hapus
-                                    </button>
-                                </form>
-
+                                </div>
                             </td>
                         </tr>
 
@@ -99,12 +95,46 @@
     </div>
 
 </div>
+
+{{-- MODAL KONFIRMASI HAPUS --}}
+<div class="modal fade" id="modalHapus" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Konfirmasi Hapus</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                Yakin ingin menghapus tahun ajar ini?
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Batal
+                </button>
+
+                <form id="formHapus" method="POST">
+                    @csrf
+                    @method('DELETE')
+
+                    <button type="submit" class="btn btn-danger">
+                        Ya, Hapus
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('styles')
 <style>
 .table-theme thead th {
-    background-color: #198754; /* hijau dashboard */
+    background-color: #198754;
     color: #ffffff;
     text-align: center;
     vertical-align: middle;
@@ -112,4 +142,38 @@
     border: 1px solid #dee2e6;
 }
 </style>
+@endpush
+
+@push('styles')
+<style>
+.btn-add-icon {
+    background: #198754;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-add-icon:hover {
+    background: #157347;
+    color: #fff;
+    transform: translateY(-1px);
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+function setHapus(url) {
+    document.getElementById('formHapus').action = url;
+    let modal = new bootstrap.Modal(document.getElementById('modalHapus'));
+    modal.show();
+}
+</script>
 @endpush
