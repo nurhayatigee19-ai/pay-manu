@@ -20,6 +20,14 @@ jobs:
       - name: Install dependency
         run: composer install
 
+      - name: Setup Laravel directories
+        run: |
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          mkdir -p storage/logs
+          chmod -R 777 storage bootstrap/cache
+
       - name: Setup env
         run: |
           cp .env.example .env
