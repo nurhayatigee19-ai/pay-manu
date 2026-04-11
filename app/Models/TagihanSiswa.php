@@ -114,39 +114,33 @@ class TagihanSiswa extends Model
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            // ============================
-            // 1. VALIDASI TAHUN AJAR AKTIF
-            // ============================
             $tahunAjarAktif = TahunAjar::where('aktif', true)->first();
 
             if (!$tahunAjarAktif) {
                 throw new DomainException('Tahun ajar tidak aktif');
             }
 
-            // ============================
-            // 2. TENTUKAN STATUS TUNGGAKAN
-            // ============================
             $tunggakan = $tagihan->tahun_ajar_id !== $tahunAjarAktif->id;
 
-            // ============================
-            // 3. VALIDASI STATUS TAGIHAN
-            // ============================
-            if ($tagihan->tahun_ajar_id === $tahunAjarAktif->id) {
-                // Tagihan tahun aktif → OK
-            } else {
-                // Tagihan lama → hanya boleh jika dianggap tunggakan
-                // (secara logika ini pasti true, tapi kita eksplisitkan)
-                if (!$tunggakan) {
-                    throw new DomainException('Tahun ajar tidak aktif');
+            // ===============================
+            // 🔒 IDEMPOTENCY (STRONG VERSION)
+            // ===============================
+            if ($idempotencyKey) {
+                $existing = $tagihan->pembayaran()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing) {
+                    return $existing;
                 }
             }
 
-            // ============================
-            // 4. HITUNG PEMBAYARAN
-            // ============================
+            // ===============================
+            // 🔥 HITUNG ULANG
+            // ===============================
             $totalDibayar = $tagihan->pembayaranValid()->sum('jumlah');
-
-            $sisaTagihan = max(0, $tagihan->total_tagihan - $totalDibayar);
+            $sisaTagihan  = max(0, $tagihan->total_tagihan - $totalDibayar);
 
             if ($sisaTagihan <= 0) {
                 throw new DomainException('Tagihan sudah lunas');
@@ -156,26 +150,45 @@ class TagihanSiswa extends Model
                 throw new DomainException('Pembayaran melebihi sisa tagihan');
             }
 
-            // ============================
-            // 5. SIMPAN PEMBAYARAN
-            // ============================
-            $pembayaran = $tagihan->pembayaran()->create([
-                'jumlah' => $jumlah,
-                'user_id' => Auth::id() ?? 1,
-                'status' => 'valid',
-                'tanggal_bayar' => now(),
-                'keterangan' => $keterangan ?? 'Pembayaran SPP',
-                'kode_transaksi' => 'PAY-' . now()->format('YmdHis') . rand(100,999),
-                'idempotency_key' => $idempotencyKey,
-                'tunggakan' => $tunggakan,
-            ]);
+            // ===============================
+            // 💾 INSERT PEMBAYARAN
+            // ===============================
+            try {
+                $pembayaran = $tagihan->pembayaran()->create([
+                    'jumlah'           => $jumlah,
+                    'user_id'          => auth()->id() ?? 1,
+                    'status'           => 'valid',
+                    'tanggal_bayar'    => now(),
+                    'keterangan'       => $keterangan ?? 'Pembayaran SPP',
+                    'kode_transaksi'   => 'PAY-' . now()->format('YmdHis') . rand(100,999),
+                    'idempotency_key'  => $idempotencyKey,
+                    'tunggakan'        => $tunggakan,
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
 
-            // ============================
-            // 6. UPDATE TAGIHAN
-            // ============================
-            $tagihan->total_dibayar += $jumlah;
-            $tagihan->lunas = $tagihan->total_dibayar >= $tagihan->total_tagihan;
-            $tagihan->save();
+                // 🔥 ambil ulang data kalau bentrok UNIQUE
+                if ($idempotencyKey) {
+                    $existing = $tagihan->pembayaran()
+                        ->where('idempotency_key', $idempotencyKey)
+                        ->first();
+
+                    if ($existing) {
+                        return $existing;
+                    }
+                }
+
+                throw new DomainException('Transaksi duplikat / race condition');
+            }
+
+            // ===============================
+            // 🔁 UPDATE TAGIHAN
+            // ===============================
+            $totalDibayarBaru = $tagihan->pembayaranValid()->sum('jumlah');
+
+            $tagihan->update([
+                'total_dibayar' => $totalDibayarBaru,
+                'lunas' => $totalDibayarBaru >= $tagihan->total_tagihan,
+            ]);
 
             return $pembayaran;
         });

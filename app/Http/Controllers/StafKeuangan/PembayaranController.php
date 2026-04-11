@@ -107,11 +107,6 @@ class PembayaranController extends Controller
             'idempotency_key' => ['nullable','string']
         ]);
 
-        // CEK DOUBLE TRANSAKSI
-        if (Pembayaran::where('idempotency_key', $request->idempotency_key)->exists()) {
-            return back()->with('error','Transaksi sudah diproses sebelumnya.');
-        }
-
         $tagihan = TagihanSiswa::findOrFail($request->tagihan_siswa_id);
 
         try {
@@ -144,41 +139,31 @@ class PembayaranController extends Controller
             'tagihan_siswa_id' => 'required|exists:tagihan_siswa,id',
             'jumlah'           => 'required|numeric|min:1',
             'keterangan'       => 'nullable|string|max:255',
+            'idempotency_key'  => 'nullable|string'
         ]);
 
         $tagihan = TagihanSiswa::findOrFail($request->tagihan_siswa_id);
-        $jumlah = (int) $request->jumlah;
-        $keterangan = $request->keterangan;
-        $userId = $request->user()->id;
 
-        $pembayaran = DB::transaction(function () use ($tagihan, $jumlah, $keterangan, $userId) {
-            
-            $tunggakan = $keterangan !== null;
+        try {
 
-            if (!$tagihan->tahunAjar->aktif && !$tunggakan) {
-                throw new DomainException('Tahun ajar tidak aktif');
-            }
+            $pembayaran = $tagihan->bayar(
+                (float) $request->jumlah,
+                $request->keterangan,
+                $request->idempotency_key
+            );
 
-            if ($jumlah > $tagihan->sisa_tagihan) {
-                throw new DomainException('Pembayaran melebihi sisa tagihan');
-            }
+            return response()->json([
+                'success' => true,
+                'data'    => $pembayaran
+            ], 200);
 
-            $pembayaran = $tagihan->pembayaran()->create([
-                'jumlah'        => $jumlah,
-                'keterangan'    => $keterangan,
-                'status'        => 'valid',
-                'tanggal_bayar' => now(),
-                'user_id'       => $userId,
-                'tunggakan'     => $tunggakan,
-            ]);
+        } catch (\DomainException $e) {
 
-            return $pembayaran;
-        });
-
-        return response()->json([
-            'success' => true,
-            'data'    => $pembayaran
-        ], 200);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
     }
 
     public function show($id)

@@ -114,14 +114,11 @@ class Pembayaran extends Model
                 'keterangan' => $alasan
             ]);
 
-            // ❗ PERHATIAN: kamu pakai sistem dinamis (sum pembayaran valid)
-            // jadi TIDAK perlu update total_dibayar manual
-
             $tagihan = $this->tagihanSiswa;
 
-            $tagihan->total_dibayar -= $this->jumlah;
-            $tagihan->lunas = false;
-
+            // 🔥 RECOMPUTE (ANTI ERROR)
+            $tagihan->total_dibayar = $tagihan->pembayaranValid()->sum('jumlah');
+            $tagihan->lunas = $tagihan->total_dibayar >= $tagihan->total_tagihan;
             $tagihan->save();
 
             return $this;
