@@ -239,4 +239,103 @@ class SiswaController extends Controller
             'riwayat'
         ));
     }
+
+    /**
+     * =======================
+     * ⭐ EDIT SISWA (FORM)
+     * =======================
+     * Menampilkan form edit data siswa
+     */
+    public function edit($id)
+    {
+        // Ambil data siswa (termasuk yang sudah dihapus jika pakai soft delete)
+        $siswa = Siswa::findOrFail($id); 
+        
+        // Ambil daftar kelas untuk dropdown
+        $listKelas = Kelas::orderBy('nama_kelas')->get();
+        
+        return view('stafkeuangan.siswa.edit', compact('siswa', 'listKelas'));
+    }
+
+    /**
+     * =======================
+     * ⭐ UPDATE SISWA
+     * =======================
+     * Memproses update data siswa
+     */
+    public function update(Request $request, $id)
+    {
+        // Validasi input
+        $request->validate([
+            'nis'      => 'required|unique:siswa,nis,' . $id,
+            'nama'     => 'required|string|max:100',
+            'kelas_id' => 'required|exists:kelas,id',
+        ]);
+
+        // Cari data siswa
+        $siswa = Siswa::withTrashed()->findOrFail($id);
+        
+        // Update data
+        $siswa->update([
+            'nis'      => $request->nis,
+            'nama'     => $request->nama,
+            'kelas_id' => $request->kelas_id,
+        ]);
+
+        // Redirect dengan pesan sukses
+        return redirect()
+            ->route('stafkeuangan.siswa.index')
+            ->with('success', 'Data siswa berhasil diperbarui');
+    }
+
+    /**
+     * =======================
+     * ⭐ DESTROY (HAPUS SISWA)
+     * =======================
+     * Menghapus data siswa (soft delete jika pakai SoftDeletes)
+     */
+    public function destroy($id)
+    {
+        // Cari data siswa
+        $siswa = Siswa::findOrFail($id);
+        
+        // Cek apakah siswa memiliki tagihan
+        $hasTagihan = $siswa->tagihanSiswa()->count() > 0;
+        
+        if ($hasTagihan) {
+            return redirect()
+                ->route('stafkeuangan.siswa.index')
+                ->with('error', 'Siswa memiliki tagihan, tidak bisa dihapus!');
+        }
+        
+        // Hapus data (soft delete jika pakai SoftDeletes)
+        $siswa->delete();
+        
+        return redirect()
+            ->route('stafkeuangan.siswa.index')
+            ->with('success', 'Data siswa berhasil dihapus');
+    }
+
+    /**
+     * =======================
+     * ⭐ RESTORE SISWA (OPSIONAL)
+     * =======================
+     * Memulihkan data siswa yang sudah dihapus (soft delete)
+     */
+    public function restore($id)
+    {
+        $siswa = Siswa::withTrashed()->findOrFail($id);
+        
+        if (!$siswa->trashed()) {
+            return redirect()
+                ->route('stafkeuangan.siswa.index')
+                ->with('warning', 'Data siswa tidak dalam keadaan terhapus');
+        }
+        
+        $siswa->restore();
+        
+        return redirect()
+            ->route('stafkeuangan.siswa.index')
+            ->with('success', 'Data siswa berhasil dipulihkan');
+    }
 }
