@@ -14,8 +14,16 @@
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
@@ -56,7 +64,7 @@
 
                                     {{-- AKTIFKAN --}}
                                     @if(!$t->aktif)
-                                    <form action="{{ route('stafkeuangan.tahun_ajar.aktifkan', $t->id) }}" method="POST">
+                                    <form action="{{ route('stafkeuangan.tahun_ajar.aktifkan', $t->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         <button type="submit"
                                                 class="btn btn-success btn-sm btn-action"
@@ -66,24 +74,33 @@
                                     </form>
                                     @endif
 
-                                    {{-- HAPUS (PAKAI MODAL) --}}
+                                    {{-- ⭐ TOMBOL HAPUS DENGAN SWEETALERT (DIUBAH) --}}
                                     <button type="button"
                                             class="btn btn-danger btn-sm btn-action"
                                             title="Hapus"
-                                            onclick="setHapus('{{ route('stafkeuangan.tahun_ajar.destroy', $t->id) }}')">
+                                            onclick="confirmDelete({{ $t->id }}, '{{ $t->tahun }}')">
                                         <i class="bi bi-trash"></i>
                                     </button>
+
+                                    {{-- FORM TERSEMBUNYI UNTUK HAPUS --}}
+                                    <form id="delete-form-{{ $t->id }}" 
+                                          action="{{ route('stafkeuangan.tahun_ajar.destroy', $t->id) }}" 
+                                          method="POST" 
+                                          style="display: none;">
+                                        @csrf
+                                        @method('DELETE')
+                                    </form>
 
                                 </div>
                             </td>
                         </tr>
 
                         @empty
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">
-                                Belum ada data tahun ajar
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">
+                                    Belum ada data tahun ajar
+                                </td>
+                            </tr>
                         @endforelse
 
                     </tbody>
@@ -95,40 +112,6 @@
     </div>
 
 </div>
-
-{{-- MODAL KONFIRMASI HAPUS --}}
-<div class="modal fade" id="modalHapus" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Konfirmasi Hapus</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-                Yakin ingin menghapus tahun ajar ini?
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    Batal
-                </button>
-
-                <form id="formHapus" method="POST">
-                    @csrf
-                    @method('DELETE')
-
-                    <button type="submit" class="btn btn-danger">
-                        Ya, Hapus
-                    </button>
-                </form>
-            </div>
-
-        </div>
-    </div>
-</div>
-
 @endsection
 
 @push('styles')
@@ -141,11 +124,7 @@
     font-weight: 600;
     border: 1px solid #dee2e6;
 }
-</style>
-@endpush
 
-@push('styles')
-<style>
 .btn-add-icon {
     background: #198754;
     color: #fff;
@@ -165,15 +144,48 @@
     color: #fff;
     transform: translateY(-1px);
 }
+
+.action-group {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-action {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+}
+
+.alert {
+    border-radius: 10px;
+}
 </style>
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function setHapus(url) {
-    document.getElementById('formHapus').action = url;
-    let modal = new bootstrap.Modal(document.getElementById('modalHapus'));
-    modal.show();
+function confirmDelete(id, tahunAjar) {
+    Swal.fire({
+        title: 'Hapus Tahun Ajar?',
+        html: `Anda akan menghapus tahun ajar <strong>${tahunAjar}</strong><br><br>
+               <small class="text-warning">⚠️ Tahun ajar yang memiliki tagihan TIDAK BISA dihapus!</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById(`delete-form-${id}`).submit();
+        }
+    });
 }
 </script>
 @endpush
