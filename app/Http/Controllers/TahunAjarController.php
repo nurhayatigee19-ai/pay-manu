@@ -29,7 +29,7 @@ class TahunAjarController extends Controller
             'aktif' => false
         ]);
 
-        return redirect()->route('stafkeuangan.tahunajar.index')
+        return redirect()->route('stafkeuangan.tahun_ajar.index')
             ->with('success', 'Tahun ajar berhasil ditambahkan');
     }
 
@@ -52,14 +52,27 @@ class TahunAjarController extends Controller
         $tahun->generateTagihan();
 
         return redirect()
-            ->route('stafkeuangan.tahunajar.index')
+            ->route('stafkeuangan.tahun_ajar.index')
             ->with('success', 'Tahun ajar berhasil diaktifkan dan tagihan dibuat');
     }
 
     public function destroy($id)
     {
-        TahunAjar::findOrFail($id)->delete();
-
-        return back()->with('success', 'Tahun ajar berhasil dihapus');
+        $tahunAjar = TahunAjar::findOrFail($id);
+        
+        // Cek apakah tahun ajar memiliki tagihan
+        $hasTagihan = \App\Models\TagihanSiswa::where('tahun_ajar_id', $id)->count() > 0;
+        
+        if ($hasTagihan) {
+            return redirect()
+                ->route('stafkeuangan.tahun_ajar.index')
+                ->with('error', 'Tahun Ajar memiliki tagihan, tidak bisa dihapus!');
+        }
+        
+        $tahunAjar->delete();
+        
+        return redirect()
+            ->route('stafkeuangan.tahun_ajar.index')
+            ->with('success', 'Tahun Ajar berhasil dihapus');
     }
 }
