@@ -15,7 +15,6 @@
             @endisset
         </h3>
 
-        {{-- ✅ TOMBOL SUDAH DISAMAKAN --}}
         <a href="{{ route('stafkeuangan.siswa.create') }}" class="btn-add-icon">
             <i class="bi bi-plus-circle"></i> Tambah Siswa
         </a>
@@ -64,6 +63,21 @@
 
         </div>
     </form>
+
+    {{-- ALERT NOTIFIKASI --}}
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
 
     {{-- TABEL --}}
     <div class="card shadow-sm border-0">
@@ -117,15 +131,18 @@
                                     @endif
                                 </td>
 
+                                {{-- ⭐ KOLOM AKSI DENGAN EDIT & HAPUS ⭐ --}}
                                 <td class="text-center">
                                     <div class="action-group">
 
+                                        {{-- Tombol Detail --}}
                                         <a href="{{ route('stafkeuangan.siswa.show', $s->id) }}"
                                            class="btn btn-sm btn-outline-primary btn-action"
                                            title="Detail">
                                             <i class="bi bi-eye"></i>
                                         </a>
 
+                                        {{-- Tombol Bayar --}}
                                         @if($s->tagihan)
                                             <a href="{{ route('stafkeuangan.pembayaran.create', $s->tagihan->id) }}"
                                                 class="btn btn-sm btn-success btn-action"
@@ -134,14 +151,28 @@
                                             </a>
                                         @endif
 
+                                        {{-- ⭐ TOMBOL EDIT (BARU) --}}
+                                        <a href="{{ route('stafkeuangan.siswa.edit', $s->id) }}"
+                                           class="btn btn-sm btn-warning btn-action"
+                                           title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+
+                                        {{-- ⭐ TOMBOL HAPUS (BARU) --}}
+                                        <button type="button"
+                                                class="btn btn-sm btn-danger btn-action"
+                                                title="Hapus"
+                                                onclick="confirmDelete({{ $s->id }}, '{{ $s->nama }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+
                                     </div>
                                 </td>
-
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="9" class="text-center text-muted py-4">
-                                    Data siswa belum tersedia
+                                    <i class="bi bi-inbox"></i> Data siswa belum tersedia
                                 </td>
                             </tr>
                         @endforelse
@@ -152,7 +183,7 @@
             {{-- FOOTER --}}
             <div class="d-flex justify-content-between align-items-center mt-2">
 
-                <div class ="text-muted small">
+                <div class="text-muted small">
                     @php
                         $from = $siswa->firstItem();
                         $to = $siswa->lastItem();
@@ -174,6 +205,12 @@
 
 </div>
 
+{{-- FORM HAPUS (Tersembunyi) --}}
+<form id="delete-form" method="POST" style="display: none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 @push('styles')
 <style>
 .table-theme thead th {
@@ -183,15 +220,17 @@
 
 /* Badge Status */
 .badge-lunas {
-    background:#198754;
-    color:#fff;
-    padding:6px 12px;
+    background: #198754;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 20px;
 }
 
 .badge-belum {
-    background:#dc3545;
-    color:#fff;
-    padding:6px 12px;
+    background: #dc3545;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 20px;
 }
 
 /* Tombol ikon */
@@ -208,6 +247,7 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
+    border-radius: 8px;
 }
 
 /* Tombol aksi */
@@ -246,18 +286,46 @@
     background-color: #157347;
     color: #fff;
 }
+
+/* Alert */
+.alert {
+    border-radius: 10px;
+}
 </style>
 @endpush
 
-{{-- TOOLTIP --}}
+{{-- TOOLTIP & SWEETALERT --}}
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // Tooltip
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
     tooltipTriggerList.map(function (el) {
         return new bootstrap.Tooltip(el)
-    })
+    });
 });
+
+// ⭐ FUNGSI KONFIRMASI HAPUS DENGAN SWEETALERT
+function confirmDelete(id, nama) {
+    Swal.fire({
+        title: 'Hapus Data Siswa?',
+        html: `Anda akan menghapus siswa <strong>${nama}</strong><br><br>
+               <small class="text-warning">⚠️ Data yang dihapus tidak dapat dikembalikan</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let form = document.getElementById('delete-form');
+            form.action = "{{ route('stafkeuangan.siswa.destroy', '') }}/" + id;
+            form.submit();
+        }
+    });
+}
 </script>
 @endpush
 
