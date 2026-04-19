@@ -78,14 +78,23 @@ class KelasController extends Controller
             ->with('success', 'Kelas berhasil ditambahkan');
     }
 
-    public function destroy(Kelas $kelas)
+    public function destroy($id)
     {
-        if ($kelas->siswa()->count() > 0) {
-            return back()->with('error', 'Kelas tidak bisa dihapus karena sudah memiliki siswa');
+        $kelas = Kelas::findOrFail($id);
+        
+        // Cek apakah kelas memiliki siswa
+        $hasSiswa = \App\Models\Siswa::where('kelas_id', $id)->count() > 0;
+        
+        if ($hasSiswa) {
+            return redirect()
+                ->route('stafkeuangan.kelas.index')
+                ->with('error', 'Kelas memiliki siswa, tidak bisa dihapus!');
         }
-
+        
         $kelas->delete();
-
-        return back()->with('success', 'Kelas berhasil dihapus');
+        
+        return redirect()
+            ->route('stafkeuangan.kelas.index')
+            ->with('success', 'Kelas berhasil dihapus');
     }
 }
