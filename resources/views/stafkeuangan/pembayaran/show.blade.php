@@ -60,35 +60,37 @@
 
                             <td>
                                 {{ $p->keterangan ?? 'Pembayaran SPP' }}
-                            </td>
+                             </td>
 
                             <td>
                                 {{ ucfirst($p->tagihanSiswa->semester ?? '-') }}
                                 {{ $p->tagihanSiswa->tahunAjar->tahun ?? '-' }}
-                            </td>
+                             </td>
 
                             <td>
                                 Rp {{ number_format($p->jumlah, 0, ',', '.') }}
-                            </td>
+                             </td>
 
                             <td>
                                 {{ \Carbon\Carbon::parse($p->tanggal_bayar)->format('d-m-Y') }}
-                            </td>
+                             </td>
 
+                            {{-- ⭐ TOMBOL CETAK MENJADI IKON (DIUBAH) --}}
                             <td class="text-center">
                                 <a href="{{ route('stafkeuangan.pembayaran.cetak', $p->id) }}"
-                                target="_blank"
-                                class="btn btn-sm btn-success">
-                                    Cetak
+                                   target="_blank"
+                                   class="btn btn-sm btn-success btn-action"
+                                   title="Cetak">
+                                    <i class="bi bi-printer-fill"></i>
                                 </a>
-                            </td>
-                        </tr>
+                             </td>
+                         </tr>
                     @empty
                         <tr>
                             <td colspan="6" class="text-center">
                                 Belum ada pembayaran
-                            </td>
-                        </tr>
+                             </td>
+                         </tr>
                     @endforelse
                 </tbody>
             </table>
@@ -105,6 +107,7 @@
         </a>
     </div>
 </div>
+
 @push('styles')
 <style>
 .table-theme thead th {
@@ -115,6 +118,50 @@
     font-weight: 600;
     border: 1px solid rgba(255,255,255,0.25) !important;
 }
+
+/* ⭐ STYLE UNTUK TOMBOL IKON */
+.btn-action {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+}
+
+.btn-action i {
+    font-size: 16px;
+}
+
+.btn-back-pro {
+    background-color: #198754;
+    color: #fff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
+}
+
+.btn-back-pro:hover {
+    background-color: #157347;
+    color: #fff;
+    transform: translateX(-3px);
+}
 </style>
 @endpush
+
+@push('scripts')
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Tooltip
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+    tooltipTriggerList.map(function (el) {
+        return new bootstrap.Tooltip(el)
+    });
+});
+</script>
+@endpush
+
 @endsection
