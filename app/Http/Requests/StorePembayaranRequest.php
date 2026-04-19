@@ -11,7 +11,7 @@ class StorePembayaranRequest extends FormRequest
         return true;
     }
 
-    // 🔥 INI KUNCI UTAMA
+    // INI KUNCI UTAMA
     public function expectsJson(): bool
     {
         return true;
