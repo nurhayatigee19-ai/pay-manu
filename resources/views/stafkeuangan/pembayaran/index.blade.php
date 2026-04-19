@@ -50,6 +50,21 @@
         </div>
     </form>
 
+    {{-- ALERT NOTIFIKASI --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     {{-- TABEL --}}
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
@@ -102,20 +117,22 @@
                                 </a>
 
                                 @if($p->status === 'valid')
-                                    <form action="{{ url('/stafkeuangan/pembayaran/' . $p->id . '/batalkan') }}"
-                                          method="POST"
-                                          onsubmit="return confirm('Yakin ingin membatalkan pembayaran ini?')">
+                                    {{-- ⭐ TOMBOL BATALKAN DENGAN SWEETALERT (DIUBAH) --}}
+                                    <button type="button"
+                                            class="btn btn-sm btn-danger"
+                                            title="Batalkan"
+                                            onclick="confirmBatal({{ $p->id }}, '{{ $p->nama_siswa }}', '{{ number_format($p->jumlah, 0, ',', '.') }}')">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </button>
+
+                                    {{-- FORM TERSEMBUNYI UNTUK BATALKAN --}}
+                                    <form id="batal-form-{{ $p->id }}" 
+                                          action="{{ route('stafkeuangan.pembayaran.batalkan', $p->id) }}" 
+                                          method="POST" 
+                                          style="display: none;">
                                         @csrf
                                         @method('PATCH')
-
-                                        <input type="hidden" name="alasan" value="Kesalahan input oleh staf">
-
-                                        <button type="button"
-                                            class="btn btn-sm btn-danger btn-batalkan"
-                                            data-id="{{ $p->id }}"
-                                            title="Batalkan">
-                                            <i class="bi bi-x-circle-fill"></i>
-                                        </button>
+                                        <input type="hidden" name="alasan" value="Pembatalan oleh staf">
                                     </form>
                                 @else
                                     <span class="badge bg-secondary">Batal</span>
@@ -149,45 +166,7 @@
     </div>
 
 </div>
-
-{{-- MODAL KONFIRMASI Batalkan --}}
-<div class="modal fade" id="modalBatal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <form id="formBatal" method="POST">
-                @csrf
-                @method('PATCH')
-
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Konfirmasi Pembatalan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-                    <p>Yakin ingin membatalkan pembayaran ini?</p>
-
-                    <div class="mb-3">
-                        <label class="form-label">Alasan (opsional)</label>
-                        <textarea name="alasan" class="form-control"
-                            placeholder="Contoh: salah input nominal"></textarea>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        Batal
-                    </button>
-                    <button type="submit" class="btn btn-danger">
-                        Ya, Batalkan
-                    </button>
-                </div>
-
-            </form>
-
-        </div>
-    </div>
-</div>
+@endsection
 
 {{-- STYLE --}}
 @push('styles')
@@ -224,35 +203,54 @@
     background-color: #157347;
     color: #fff;
 }
+
+.alert {
+    border-radius: 10px;
+}
 </style>
 @endpush
 
-{{-- TOOLTIP --}}
+{{-- TOOLTIP & SWEETALERT --}}
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // Tooltip
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
     tooltipTriggerList.map(function (el) {
         return new bootstrap.Tooltip(el)
-    })
+    });
+});
 
-    // Modal batal
-    const modal = new bootstrap.Modal(document.getElementById('modalBatal'))
-    const form = document.getElementById('formBatal')
-
-    document.querySelectorAll('.btn-batalkan').forEach(btn => {
-        btn.addEventListener('click', function () {
-            let id = this.getAttribute('data-id')
-
-            // set action dinamis
-            form.action = `/stafkeuangan/pembayaran/${id}/batalkan`
-
-            modal.show()
-        })
-    })
-
-})
+// ⭐ FUNGSI KONFIRMASI BATALKAN DENGAN SWEETALERT
+function confirmBatal(id, namaSiswa, jumlah) {
+    Swal.fire({
+        title: 'Batalkan Pembayaran?',
+        html: `Anda akan membatalkan pembayaran dari <strong>${namaSiswa}</strong><br>
+               Jumlah: <strong>Rp ${jumlah}</strong><br><br>
+               <small class="text-warning">⚠️ Pembayaran yang dibatalkan akan dikembalikan ke status tagihan!</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, batalkan!',
+        cancelButtonText: 'Tidak'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Tampilkan loading
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Sedang membatalkan pembayaran',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Submit form
+            document.getElementById(`batal-form-${id}`).submit();
+        }
+    });
+}
 </script>
 @endpush
-
-@endsection
