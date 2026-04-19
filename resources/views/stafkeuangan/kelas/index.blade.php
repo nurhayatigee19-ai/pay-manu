@@ -20,7 +20,17 @@
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     @endif
 
     <div class="card">
@@ -48,24 +58,33 @@
                             <td class="text-center">
                                 <div class="action-group">
 
-                                    {{-- HAPUS (Modal) --}}
+                                    {{-- ⭐ TOMBOL HAPUS DENGAN SWEETALERT (DIUBAH) --}}
                                     <button type="button"
                                             class="btn btn-danger btn-sm btn-action"
                                             title="Hapus"
-                                            onclick="setHapus('{{ route('stafkeuangan.kelas.destroy', $item->id) }}')">
+                                            onclick="confirmDelete({{ $item->id }}, '{{ $item->nama_kelas }}')">
                                         <i class="bi bi-trash"></i>
                                     </button>
+
+                                    {{-- FORM TERSEMBUNYI UNTUK HAPUS --}}
+                                    <form id="delete-form-{{ $item->id }}" 
+                                          action="{{ route('stafkeuangan.kelas.destroy', $item->id) }}" 
+                                          method="POST" 
+                                          style="display: none;">
+                                        @csrf
+                                        @method('DELETE')
+                                    </form>
 
                                 </div>
                             </td>
                         </tr>
 
                         @empty
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">
-                                Data kelas belum tersedia
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    Data kelas belum tersedia
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
 
@@ -74,36 +93,7 @@
         </div>
     </div>
 </div>
-
-{{-- MODAL KONFIRMASI HAPUS --}}
-<div class="modal fade" id="modalHapus" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Konfirmasi Hapus</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-                Yakin ingin menghapus kelas ini?
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    Batal
-                </button>
-
-                <form id="formHapus" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">Ya, Hapus</button>
-                </form>
-            </div>
-
-        </div>
-    </div>
-</div>
+@endsection
 
 @push('styles')
 <style>
@@ -122,6 +112,7 @@
     justify-content: center;
     gap: 6px;
 }
+
 .btn-action {
     width: 32px;
     height: 32px;
@@ -129,30 +120,69 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
+    border-radius: 8px;
+}
+
+.btn-add-icon {
+    background: #198754;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-add-icon:hover {
+    background: #157347;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.alert {
+    border-radius: 10px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
 </style>
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function setHapus(url) {
-    document.getElementById('formHapus').action = url;
-    let modal = new bootstrap.Modal(document.getElementById('modalHapus'));
-    modal.show();
+function confirmDelete(id, namaKelas) {
+    Swal.fire({
+        title: 'Hapus Kelas?',
+        html: `Anda akan menghapus kelas <strong>${namaKelas}</strong><br><br>
+               <small class="text-warning">⚠️ Kelas yang memiliki siswa TIDAK BISA dihapus!</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById(`delete-form-${id}`).submit();
+        }
+    });
 }
-</script>
-@endpush
 
-{{-- TOOLTIP --}}
-@push('scripts')
-<script>
+// Tooltip
 document.addEventListener("DOMContentLoaded", function () {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
     tooltipTriggerList.map(function (el) {
         return new bootstrap.Tooltip(el)
-    })
+    });
 });
 </script>
 @endpush
-
-@endsection
