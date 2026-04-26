@@ -1,0 +1,39 @@
+name: 🚀 Deploy ke DomaiNesia via FTP
+
+on:
+  push:
+    branches: [main]  # Akan jalan setiap push ke branch main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Ambil kode dari GitHub
+      - name: Checkout kode
+        uses: actions/checkout@v4
+      
+      # 2. Upload ke server DomaiNesia via FTP
+      - name: Upload ke hosting
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}
+          local-dir: ./
+          server-dir: ./public_html/
+          # Jangan upload file/folder ini
+          exclude: |
+            .git*
+            .github*
+            node_modules
+            .env
+            storage/
+            vendor/
+            tests/
+            .env.example
+            .editorconfig
+            .gitattributes
+            .phpunit.result.cache
+            .styleci.yml
